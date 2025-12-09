@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Vertical Mosaic Builder - Auto</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .spinner { 
+            border: 3px solid #f3f3f3; 
+            border-top: 3px solid #3b82f6; 
+            border-radius: 50%; 
+            width: 30px; 
+            height: 30px; 
+            animation: spin 1s linear infinite; 
+            display: inline-block;
+        }
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .step {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+        }
+        .step.active {
+            background: #dbeafe;
+            border-color: #3b82f6;
+        }
+        .step.completed {
+            background: #d1fae5;
+            border-color: #10b981;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-4xl font-bold text-gray-900 mb-2">🤖 Vertical Mosaic Builder</h1>
+                <p class="text-gray-600">Detección Automática de Marcadores - Compatible con cualquier imagen DJI</p>
+            </div>
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step" id="step-1">
+                    <div class="text-2xl mb-1">📤</div>
+                    <div class="font-semibold">1. Cargar</div>
+                    <div class="text-sm text-gray-600">Imágenes DJI</div>
+                </div>
+                <div class="step" id="step-2">
+                    <div class="text-2xl mb-1">🔍</div>
+                    <div class="font-semibold">2. Detectar</div>
+                    <div class="text-sm text-gray-600">Marcadores</div>
+                </div>
+                <div class="step" id="step-3">
+                    <div class="text-2xl mb-1">🎭</div>
+                    <div class="font-semibold">3. Máscaras</div>
+                    <div class="text-sm text-gray-600">Conversión</div>
+                </div>
+                <div class="step" id="step-4">
+                    <div class="text-2xl mb-1">🗺️</div>
+                    <div class="font-semibold">4. Mosaico</div>
+                    <div class="text-sm text-gray-600">Generación</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column - Controls -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Upload Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold mb-4">Paso 1: Cargar Imágenes DJI</h2>
+                        
+                        <!-- Drop Zone -->
+                        <div id="drop-zone" class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-blue-500 transition-colors cursor-pointer">
+                            <span class="material-symbols-outlined text-6xl text-gray-400 mb-4">cloud_upload</span>
+                            <p class="text-lg font-medium text-gray-700 mb-2">Arrastra cualquier imagen DJI aquí</p>
+                            <p class="text-sm text-gray-500 mb-4">O haz clic en el botón de abajo</p>
+                            
+                            <!-- ✅ BOTÓN VISIBLE PARA SELECCIONAR ARCHIVOS -->
+                            <button type="button" id="select-files-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors inline-flex items-center gap-2">
+                                <span class="material-symbols-outlined">folder_open</span>
+                                <span>Seleccionar Imágenes</span>
+                            </button>
+                            
+                            <!-- Input file oculto -->
+                            <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.JPG,.PNG" class="hidden"/>
+                        </div>
+                        
+                        <!-- Lista de archivos cargados -->
+                        <div id="files-list" class="mt-4 hidden">
+                            <div class="flex justify-between items-center mb-2">
+                                <p class="text-sm font-medium text-gray-700">Archivos seleccionados:</p>
+                                <span id="file-count" class="text-sm text-blue-600 font-semibold">0 archivos</span>
+                            </div>
+                            <div id="files-container" class="space-y-1 max-h-60 overflow-y-auto bg-gray-50 rounded p-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button id="detect-btn" class="bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                            <span class="material-symbols-outlined">search</span>
+                            <span>Detectar Marcadores</span>
+                        </button>
+                        
+                        <button id="mask-btn" class="bg-purple-600 text-white py-4 rounded-lg font-semibold hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                            <span class="material-symbols-outlined">image</span>
+                            <span>Crear Máscaras</span>
+                        </button>
+                        
+                        <button id="mosaic-btn" class="bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2" disabled>
+                            <span class="material-symbols-outlined">dashboard</span>
+                            <span>Generar Mosaico</span>
+                        </button>
+                    </div>
+
+                    <!-- Detected Markers Table -->
+                    <div id="markers-section" class="bg-white rounded-lg shadow p-6 hidden">
+                        <h2 class="text-xl font-semibold mb-4">Marcadores Detectados</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left">#</th>
+                                        <th class="px-4 py-2 text-left">Archivo</th>
+                                        <th class="px-4 py-2 text-left">Marcador</th>
+                                        <th class="px-4 py-2 text-left">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="markers-table-body" class="divide-y divide-gray-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <p class="text-sm text-gray-600">Imágenes</p>
+                            <p id="stat-loaded" class="text-3xl font-bold text-blue-600">0</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <p class="text-sm text-gray-600">Marcadores</p>
+                            <p id="stat-markers" class="text-3xl font-bold text-purple-600">0</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <p class="text-sm text-gray-600">Flores</p>
+                            <p id="stat-flowers" class="text-3xl font-bold text-green-600">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Preview & Logs -->
+                <div class="space-y-6">
+                    <!-- Preview -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold mb-4">Vista Previa</h2>
+                        <div class="flex gap-2 mb-4">
+                            <button id="preview-mask" class="flex-1 py-2 rounded bg-blue-100 text-blue-700 font-medium hover:bg-blue-200 transition-colors">Máscara</button>
+                            <button id="preview-color" class="flex-1 py-2 rounded bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition-colors">Color</button>
+                        </div>
+                        <div id="preview-container" class="bg-gray-100 rounded-lg h-96 flex items-center justify-center overflow-hidden">
+                            <p class="text-gray-500">Sin preview disponible</p>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            <button id="download-mask" class="w-full py-2 rounded bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                ⬇️ Descargar Máscara
+                            </button>
+                            <button id="download-color" class="w-full py-2 rounded bg-gray-200 text-gray-700 font-medium hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                ⬇️ Descargar Color
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Logs -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold mb-4">Logs del Sistema</h2>
+                        <div id="logs" class="bg-gray-900 text-gray-300 rounded p-4 h-64 overflow-y-auto font-mono text-xs">
+                            <p><span class="text-green-400">🚀</span> Sistema listo para detectar marcadores automáticamente...</p>
+                            <p><span class="text-blue-400">ℹ️</span> Selecciona tus imágenes DJI para comenzar</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main_auto.js"></script>
+</body>
+</html>
