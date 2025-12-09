@@ -1,5 +1,3 @@
-cd ~/Desktop/WEBmarcadores
-
 cat > render.yaml << 'EOF'
 services:
   - type: web
@@ -20,6 +18,3 @@ services:
         value: production
 EOF
 
-git add render.yaml
-git commit -m "Update render.yaml with inline build commands"
-git push origin main
